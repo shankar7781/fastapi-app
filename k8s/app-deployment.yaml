@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-api
+  namespace: qa-api
+spec:
+  # Baseline replica count for the steady ~100 RPS load; HPA (hpa.yaml) takes
+  # over from here and scales this up/down automatically.
+  replicas: 3
+  selector:
+    matchLabels:
+      app: qa-api
+  template:
+    metadata:
+      labels:
+        app: qa-api
+    spec:
+      containers:
+        - name: qa-api
+          image: qa-api:latest   # replace with your real image registry/tag
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: qa-api-config
+            - secretRef:
+                name: qa-api-secrets
+          # Resource requests/limits: requests are what the scheduler uses to
+          # place pods; limits cap a runaway pod from starving its neighbors.
+          # These are starting-point values — tune based on real observed
+          # usage from /metrics.
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          # Liveness: is the process itself alive? A hang here means
+          # Kubernetes restarts the pod. Deliberately NOT using /health here,
+          # since /health checks external dependencies (DB/Redis) — a DB
+          # outage shouldn't cause Kubernetes to kill and restart every pod
+          # in a crash loop; that's what readiness is for instead.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Readiness: is this pod ready to serve traffic right now? Uses the
+          # real dependency-aware /health check built into the app — if
+          # Postgres or Redis is unreachable, this pod is pulled out of the
+          # load balancer's rotation until it recovers, without being killed.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10

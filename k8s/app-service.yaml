@@ -1,0 +1,15 @@
+# ClusterIP Service: gives the qa-api pods a stable internal DNS name/IP and
+# load-balances across whichever pods are currently Ready. Pair with an
+# Ingress (ingress.yaml) to actually expose this outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: qa-api
+  namespace: qa-api
+spec:
+  selector:
+    app: qa-api
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP

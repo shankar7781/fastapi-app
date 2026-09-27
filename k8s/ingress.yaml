@@ -1,0 +1,27 @@
+# Exposes the qa-api Service outside the cluster. Assumes an ingress
+# controller (e.g. nginx-ingress) and cert-manager are already installed —
+# adjust annotations to match your actual cluster setup.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qa-api
+  namespace: qa-api
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.example.com   # replace with your real domain
+      secretName: qa-api-tls
+  rules:
+    - host: api.example.com   # replace with your real domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: qa-api
+                port:
+                  number: 80

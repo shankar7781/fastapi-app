@@ -1,0 +1,35 @@
+# Scales the qa-api Deployment automatically between the 100 RPS baseline and
+# 500 RPS bursts described in the README's scaling scenario.
+#
+# Using CPU% here as the simplest, always-available signal. A more accurate
+# trigger in production would be a custom metric fed from Prometheus (e.g.
+# request rate or llm_request_latency_seconds p99) via the Prometheus Adapter,
+# since CPU is a weak proxy when most latency comes from waiting on the LLM
+# API rather than local compute — but CPU-based scaling works out of the box
+# with no extra components, which is the right trade-off to start with.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: qa-api
+  namespace: qa-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: qa-api
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+  behavior:
+    # Scale up fast (traffic spikes shouldn't wait), scale down slowly (avoid
+    # flapping pods up and down on a noisy/borderline metric).
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300

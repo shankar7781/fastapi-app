@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: qa_user
+      POSTGRES_PASSWORD: qa_pass
+      POSTGRES_DB: qa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://qa_user:qa_pass@postgres:5432/qa_db
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:

@@ -1,0 +1,22 @@
+# Non-secret configuration. Keeping this separate from Secret means it can be
+# edited/audited/rotated independently of actual credentials (see README ->
+# "Managing secrets/configuration").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qa-api-config
+  namespace: qa-api
+data:
+  APP_NAME: "QA API"
+  DEBUG: "false"
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+  RATE_LIMIT_PER_MINUTE: "60"
+  CACHE_TTL_SECONDS: "300"
+  LLM_PROVIDER: "gemini"
+  LLM_PRIMARY_MODEL: "gemini-3.5-flash-lite"
+  LLM_TIMEOUT_SECONDS: "30"
+  # Service-name hostnames, same mechanism as docker-compose: Kubernetes
+  # Service DNS makes "postgres" / "redis" resolvable inside the cluster.
+  DATABASE_URL: "postgresql+psycopg2://qa_user:qa_pass@postgres:5432/qa_db"
+  REDIS_URL: "redis://redis:6379/0"
